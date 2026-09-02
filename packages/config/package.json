@@ -1,0 +1,13 @@
+{
+  "name": "@nexora/config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": { "./eslint": "./eslint.js", "./tsconfig": "./tsconfig.base.json" },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  }
+}

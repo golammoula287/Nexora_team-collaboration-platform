@@ -1,0 +1,106 @@
+# ---- Dependencies -----------------------------------------------------------
+node_modules/
+.pnpm-store/
+.pnp.*
+.yarn/
+
+# ---- Secrets ----------------------------------------------------------------
+# Every env file is ignored, templates included. The key lists live on disk only.
+.env
+.env.*
+*.env
+*.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+service-account*.json
+
+# ---- Build output -----------------------------------------------------------
+.next/
+out/
+dist/
+build/
+.turbo/
+*.tsbuildinfo
+next-env.d.ts
+.swc/
+
+# ---- Test & coverage --------------------------------------------------------
+coverage/
+.nyc_output/
+playwright-report/
+playwright/.cache/
+test-results/
+blob-report/
+.vitest/
+
+# ---- Logs & runtime ---------------------------------------------------------
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-error.log*
+logs/
+pids/
+*.pid
+*.seed
+
+# ---- Caches -----------------------------------------------------------------
+.cache/
+.eslintcache
+.stylelintcache
+.parcel-cache/
+.temp/
+tmp/
+.drizzle/
+
+# ---- Uploads & local data ---------------------------------------------------
+uploads/
+storage/
+*.sqlite
+*.sqlite3
+*.db-journal
+*.dump
+*.sql.gz
+
+# ---- Deploy platforms -------------------------------------------------------
+.vercel/
+.netlify/
+.wrangler/
+.sentryclirc
+
+# ---- Editors ----------------------------------------------------------------
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+.idea/
+*.swp
+*.swo
+*.iml
+.history/
+
+# ---- OS ---------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ---- Scratch ----------------------------------------------------------------
+# Personal notes and throwaway files, never committed.
+scratch/
+notes.local.md
+TODO.local.md
+*.local.md
+
+# ---- Docs & AI tooling (local only) -----------------------------------------
+# Nothing written in markdown is committed: Plan.md, CONTEXT.md, CLAUDE.md,
+# docs/, every README.md, and the Claude Code agents and commands.
+# NOTE: these files have no version history while ignored - back them up.
+*.md
+.claude/
