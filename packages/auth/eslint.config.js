@@ -1,2 +1,2 @@
-import config from '@nexora/config/eslint/base';
+import config from '@nexora/config/eslint/node';
 export default config;

@@ -1,4 +1,4 @@
-import type { app } from './app.js';
+import type { App } from './app.js';
 
 /**
  * The contract with apps/web. This is the ONLY thing the frontend imports from
@@ -8,4 +8,4 @@ import type { app } from './app.js';
  *   import type { AppType } from '@nexora/api';
  *   const api = hc<AppType>(url);
  */
-export type AppType = typeof app;
+export type AppType = App;

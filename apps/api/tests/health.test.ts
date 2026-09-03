@@ -1,8 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { app } from '../src/app.js';
+import { createApp } from '../src/app.js';
+import type { Services } from '../src/services.js';
+
+/**
+ * Health is dependency-free by design - it must answer even when the database
+ * is unreachable, since a health check that fails when Postgres fails cannot
+ * tell you that Postgres failed. So it is tested with no real services at all.
+ */
+const app = createApp({} as Services);
 
 describe('GET /health', () => {
-  it('answers without authentication', async () => {
+  it('answers without authentication or a database', async () => {
     const res = await app.request('/health');
     expect(res.status).toBe(200);
 

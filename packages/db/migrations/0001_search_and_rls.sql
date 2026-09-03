@@ -17,14 +17,9 @@
 
 -- --- Vector and full-text indexes on the embeddings table ------------------
 
--- Semantic half of hybrid retrieval: cosine distance over half-precision
--- vectors, with pgvector's default build parameters until there is real data
--- to tune against.
 CREATE INDEX IF NOT EXISTS "embeddings_hnsw_idx"
   ON "embeddings" USING hnsw ("embedding" halfvec_cosine_ops);--> statement-breakpoint
 
--- Lexical half. The column is GENERATED ALWAYS from content, so it cannot
--- drift out of step with the text it indexes.
 CREATE INDEX IF NOT EXISTS "embeddings_search_vector_idx"
   ON "embeddings" USING gin ("search_vector");--> statement-breakpoint
 

@@ -2,12 +2,16 @@ packages:
   - "apps/*"
   - "packages/*"
 
+# pnpm 11 requires an explicit decision on every dependency with a build script,
+# so a package cannot run arbitrary code at install time unnoticed.
 allowBuilds:
-  esbuild: set this to true or false
+  # Needed: native binaries the toolchain actually runs.
+  esbuild: true
+  "@tailwindcss/oxide": true
+  unrs-resolver: true
+  sharp: true
 
-# pnpm 11 reads settings from here rather than package.json.
-onlyBuiltDependencies:
-  - esbuild
-  - sharp
-  - "@tailwindcss/oxide"
-  - unrs-resolver
+  # Not needed: optional peers of better-auth's Prisma adapter. Nexora uses
+  # Drizzle on Postgres, so neither is ever loaded.
+  "@prisma/client": false
+  better-sqlite3: false

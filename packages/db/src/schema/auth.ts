@@ -75,8 +75,9 @@ export const session = pgTable(
     ipAddress: text('ip_address'),
     userAgent: text('user_agent'),
 
-    // organization plugin - which org this session is currently acting in
+    // organization plugin - which org and team this session is acting in
     activeOrganizationId: uuid('active_organization_id'),
+    activeTeamId: uuid('active_team_id'),
     // admin plugin
     impersonatedBy: uuid('impersonated_by'),
 
@@ -99,6 +100,8 @@ export const account = pgTable(
       .references(() => user.id, { onDelete: 'cascade' }),
     accountId: text('account_id').notNull(),
     providerId: text('provider_id').notNull(),
+    /** Required by Better Auth 1.7; the OAuth issuer, or the provider id for credentials. */
+    issuer: text('issuer').notNull(),
     accessToken: text('access_token'),
     refreshToken: text('refresh_token'),
     idToken: text('id_token'),
@@ -144,6 +147,10 @@ export const twoFactor = pgTable(
       .references(() => user.id, { onDelete: 'cascade' }),
     secret: text('secret').notNull(),
     backupCodes: text('backup_codes').notNull(),
+    verified: boolean('verified').notNull().default(false),
+    /** Lockout counters, so a TOTP prompt cannot be brute-forced. */
+    failedVerificationCount: integer('failed_verification_count').notNull().default(0),
+    lockedUntil: timestamp('locked_until', { withTimezone: true, mode: 'date' }),
   },
   (t) => [index('two_factor_user_idx').on(t.userId)],
 );
@@ -245,6 +252,8 @@ export const team = pgTable(
       .notNull()
       .references(() => organization.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
+    /** Denormalised by Better Auth so team lists do not need a count query. */
+    memberCount: integer('member_count').notNull().default(0),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -261,6 +270,7 @@ export const teamMember = pgTable(
     userId: uuid('user_id')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
+    membershipKey: text('membership_key'),
     createdAt: createdAt(),
   },
   (t) => [
@@ -287,6 +297,9 @@ export const apikey = pgTable(
     start: text('start'),
     prefix: text('prefix'),
     key: text('key').notNull(),
+    /** Required by the 1.7 apiKey plugin: which key config, and what it acts for. */
+    configId: text('config_id').notNull(),
+    referenceId: text('reference_id').notNull(),
     enabled: boolean('enabled').notNull().default(true),
     refillInterval: integer('refill_interval'),
     refillAmount: integer('refill_amount'),

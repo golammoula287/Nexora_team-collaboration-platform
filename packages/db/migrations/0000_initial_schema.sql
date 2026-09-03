@@ -27,6 +27,7 @@ CREATE TABLE "account" (
 	"user_id" uuid NOT NULL,
 	"account_id" text NOT NULL,
 	"provider_id" text NOT NULL,
+	"issuer" text NOT NULL,
 	"access_token" text,
 	"refresh_token" text,
 	"id_token" text,
@@ -46,6 +47,8 @@ CREATE TABLE "apikey" (
 	"start" text,
 	"prefix" text,
 	"key" text NOT NULL,
+	"config_id" text NOT NULL,
+	"reference_id" text NOT NULL,
 	"enabled" boolean DEFAULT true NOT NULL,
 	"refill_interval" integer,
 	"refill_amount" integer,
@@ -116,6 +119,7 @@ CREATE TABLE "session" (
 	"ip_address" text,
 	"user_agent" text,
 	"active_organization_id" uuid,
+	"active_team_id" uuid,
 	"impersonated_by" uuid,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
@@ -154,6 +158,7 @@ CREATE TABLE "team" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"organization_id" uuid NOT NULL,
 	"name" text NOT NULL,
+	"member_count" integer DEFAULT 0 NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -162,6 +167,7 @@ CREATE TABLE "team_member" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"team_id" uuid NOT NULL,
 	"user_id" uuid NOT NULL,
+	"membership_key" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
@@ -169,7 +175,10 @@ CREATE TABLE "two_factor" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"user_id" uuid NOT NULL,
 	"secret" text NOT NULL,
-	"backup_codes" text NOT NULL
+	"backup_codes" text NOT NULL,
+	"verified" boolean DEFAULT false NOT NULL,
+	"failed_verification_count" integer DEFAULT 0 NOT NULL,
+	"locked_until" timestamp with time zone
 );
 --> statement-breakpoint
 CREATE TABLE "user" (

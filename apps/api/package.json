@@ -22,7 +22,11 @@
     "@nexora/shared": "workspace:*",
     "dotenv": "^17.4.2",
     "hono": "^4.13.5",
-    "zod": "^4.5.4"
+    "zod": "^4.5.4",
+    "@nexora/auth": "workspace:*",
+    "@nexora/db": "workspace:*",
+    "@nexora/email": "workspace:*",
+    "drizzle-orm": "^0.45.2"
   },
   "devDependencies": {
     "@nexora/config": "workspace:*",
@@ -30,6 +34,8 @@
     "eslint": "^10.9.1",
     "tsx": "^4.23.13",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.11",
+    "@electric-sql/pglite": "^0.5.8",
+    "@electric-sql/pglite-pgvector": "^0.0.9"
   }
 }

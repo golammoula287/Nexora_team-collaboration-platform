@@ -6,15 +6,29 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./permissions": "./src/permissions.ts"
   },
   "scripts": {
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run",
+    "auth:generate": "pnpm dlx @better-auth/cli@latest generate --config src/auth.config.ts --output ./better-auth-schema.ts -y"
+  },
+  "dependencies": {
+    "@better-auth/api-key": "^1.7.2",
+    "@better-auth/passkey": "^1.7.2",
+    "@nexora/db": "workspace:*",
+    "@nexora/shared": "workspace:*",
+    "better-auth": "^1.7.2",
+    "uuidv7": "^1.2.1"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@electric-sql/pglite-pgvector": "^0.0.9",
     "@nexora/config": "workspace:*",
+    "@types/node": "^26.4.1",
+    "drizzle-orm": "^0.45.2",
     "eslint": "^10.9.1",
     "typescript": "^6.0.3",
     "vitest": "^4.1.11"

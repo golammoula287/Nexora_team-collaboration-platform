@@ -11,10 +11,14 @@
   "scripts": {
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "resend": "^6.25.0"
   },
   "devDependencies": {
     "@nexora/config": "workspace:*",
+    "@types/node": "^26.4.1",
     "eslint": "^10.9.1",
     "typescript": "^6.0.3",
     "vitest": "^4.1.11"

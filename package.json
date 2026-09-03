@@ -6,6 +6,7 @@
     "node": ">=22"
   },
   "scripts": {
+    "env:check": "node scripts/doctor.mjs",
     "dev": "turbo run dev",
     "dev:web": "pnpm --filter @nexora/web dev",
     "dev:api": "pnpm --filter @nexora/api dev",
@@ -28,6 +29,7 @@
     "prettier": "^3.9.6",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "turbo": "^2.10.12",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "@neondatabase/serverless": "^1.1.0"
   }
 }

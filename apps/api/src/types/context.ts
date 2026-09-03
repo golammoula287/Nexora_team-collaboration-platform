@@ -1,4 +1,5 @@
 import type { OrgRole } from '@nexora/shared';
+import type { Services } from '../services.js';
 
 /**
  * What each middleware in the funnel puts on the request context.
@@ -31,7 +32,11 @@ export interface AppBindings {
     /** Set by the org middleware. */
     organization: ActiveOrg;
     role: OrgRole;
+    /** Project-level role override, when the route names a project. */
+    projectRole: OrgRole | null;
     /** Set by the logger, echoed in the X-Request-Id response header. */
     requestId: string;
+    /** The database and auth handles this app was built with. */
+    services: Services;
   };
 }

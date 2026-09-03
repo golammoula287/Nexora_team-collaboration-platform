@@ -1,6 +1,6 @@
 {
-  "id": "1f98c2dc-674b-41ab-a0dd-40758dd4403e",
-  "prevId": "0d92066d-d3ca-4406-8afe-4476f8a85907",
+  "id": "b906ca44-3578-4e0c-93c5-f6f6d6601b20",
+  "prevId": "ff08e5f4-7947-4e62-b79b-bf4ff1a1f025",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -28,6 +28,12 @@
         },
         "provider_id": {
           "name": "provider_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "issuer": {
+          "name": "issuer",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -190,6 +196,18 @@
         },
         "key": {
           "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "config_id": {
+          "name": "config_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reference_id": {
+          "name": "reference_id",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -883,6 +901,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "active_team_id": {
+          "name": "active_team_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "impersonated_by": {
           "name": "impersonated_by",
           "type": "uuid",
@@ -1267,6 +1291,13 @@
           "primaryKey": false,
           "notNull": true
         },
+        "member_count": {
+          "name": "member_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -1341,6 +1372,12 @@
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
+        },
+        "membership_key": {
+          "name": "membership_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -1449,6 +1486,26 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "verified": {
+          "name": "verified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "failed_verification_count": {
+          "name": "failed_verification_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "locked_until": {
+          "name": "locked_until",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
