@@ -3,8 +3,8 @@ import { can, type OrgRole } from '@nexora/shared';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { serverApi } from '../../../../../lib/api.server';
-import { SelectableBoard } from './selectable-board';
 import { NewTaskButton } from './new-task-button';
+import { ProjectViews } from './views/project-views';
 
 export const metadata: Metadata = { title: 'Project' };
 
@@ -16,9 +16,12 @@ export default async function ProjectPage({
   const { orgSlug, projectId } = await params;
   const api = await serverApi();
 
-  const [projectResponse, tasksResponse, meResponse] = await Promise.all([
+  const [projectResponse, tasksResponse, dependencyResponse, meResponse] = await Promise.all([
     api.orgs[':orgSlug'].projects[':projectId'].$get({ param: { orgSlug, projectId } }),
     api.orgs[':orgSlug'].tasks.$get({ param: { orgSlug }, query: { projectId } }),
+    api.orgs[':orgSlug'].projects[':projectId'].dependencies.$get({
+      param: { orgSlug, projectId },
+    }),
     api.me.$get(),
   ]);
 
@@ -27,6 +30,9 @@ export default async function ProjectPage({
 
   const { project, statuses } = await projectResponse.json();
   const { tasks } = tasksResponse.ok ? await tasksResponse.json() : { tasks: [] };
+  const { dependencies } = dependencyResponse.ok
+    ? await dependencyResponse.json()
+    : { dependencies: [] };
   const { organizations } = meResponse.ok ? await meResponse.json() : { organizations: [] };
 
   const role = (organizations.find((org) => org.slug === orgSlug)?.role ?? 'member') as OrgRole;
@@ -51,10 +57,11 @@ export default async function ProjectPage({
         }
       />
 
-      <SelectableBoard
+      <ProjectViews
         orgSlug={orgSlug}
         columns={statuses}
         tasks={tasks}
+        dependencies={dependencies}
         canDelete={can(role, 'delete', 'task')}
       />
     </div>

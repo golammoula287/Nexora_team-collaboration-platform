@@ -82,7 +82,8 @@ test('creates a task and puts it in the chosen column', async () => {
 
   // Numbered with the project key, so it can be referred to out loud.
   await expect(page.getByText('DEL-1')).toBeVisible();
-  await expect(page.getByText('high')).toBeVisible();
+  // Scoped to the card: the filter bar carries a "high" <option> as well.
+  await expect(page.locator('li').getByText('high', { exact: true })).toBeVisible();
 });
 
 test('refuses an empty title using the shared schema', async () => {

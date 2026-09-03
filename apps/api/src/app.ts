@@ -12,6 +12,7 @@ import { meRoute } from './routes/me.js';
 import { memberRoute } from './routes/members.js';
 import { organizationRoute } from './routes/organizations.js';
 import { projectRoute } from './routes/projects.js';
+import { dependencyListRoute } from './routes/dependencies-list.js';
 import { taskOperationsRoute } from './routes/task-operations.js';
 import { taskRoute } from './routes/tasks.js';
 import type { Services } from './services.js';
@@ -68,7 +69,8 @@ export function createApp(services: Services) {
     .route('/', memberRoute(services))
     .route('/', projectRoute(services))
     .route('/', taskOperationsRoute(services))
-    .route('/', taskRoute(services));
+    .route('/', taskRoute(services))
+    .route('/', dependencyListRoute(services));
 }
 
 export type App = ReturnType<typeof createApp>;

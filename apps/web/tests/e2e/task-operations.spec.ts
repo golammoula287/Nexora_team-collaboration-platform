@@ -82,8 +82,11 @@ test('bulk sets priority across a selection', async () => {
     .selectOption('urgent');
 
   await expect(page.getByText('Priority updated')).toBeVisible({ timeout: 20_000 });
-  // Both cards now show the badge, and the selection is cleared.
-  await expect(page.getByText('urgent')).toHaveCount(2);
+  // Both cards now show the badge. Scoped to the cards, because the filter bar
+  // and the bulk bar both carry an <option> with this same text.
+  await expect(page.locator('li').getByText('urgent', { exact: true })).toHaveCount(2, {
+    timeout: 20_000,
+  });
 });
 
 test('bulk moves a selection to another column', async () => {
