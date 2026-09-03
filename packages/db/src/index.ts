@@ -9,3 +9,5 @@ export type { OrgScope, OrgTable, SoftDeletableOrgTable } from './tenancy.js';
 
 export { newId, isUuid } from './ids.js';
 export { EMBEDDING_DIMENSIONS } from './schema/ai.js';
+
+export { keyBetween, keySequence, nthPosition } from './ordering.js';

@@ -11,15 +11,23 @@ import { Skeleton } from '../primitives/skeleton';
  * requires all three on every view; the legacy app shipped blank panels.
  */
 
+/*
+ * Optional props are declared `?: T | undefined` rather than `?: T`.
+ *
+ * With exactOptionalPropertyTypes, `?: string` means "absent, or a string" -
+ * so passing `description={maybeUndefined}` is an error at every call site.
+ * Since a design-system component is called from everywhere, the type belongs
+ * here rather than a spread workaround in each caller.
+ */
 export interface EmptyStateProps {
   /** One line of what goes here. Not a paragraph. */
   title: string;
-  description?: string;
+  description?: string | undefined;
   /** One primary action. An empty state without a way out is a dead end. */
-  action?: { label: string; onClick?: () => void; href?: string };
+  action?: { label: string; onClick?: () => void; href?: string } | undefined;
   /** Small by design - no illustration larger than 96px. */
-  icon?: ReactNode;
-  className?: string;
+  icon?: ReactNode | undefined;
+  className?: string | undefined;
 }
 
 export function EmptyState({ title, description, action, icon, className }: EmptyStateProps) {
@@ -58,13 +66,13 @@ export function EmptyState({ title, description, action, icon, className }: Empt
 }
 
 export interface ErrorStateProps {
-  title?: string;
-  description?: string;
+  title?: string | undefined;
+  description?: string | undefined;
   /** Wired to Next's error boundary `reset`. */
-  onRetry?: () => void;
+  onRetry?: (() => void) | undefined;
   /** Shown only in development - never leak internals to a user. */
-  detail?: string;
-  className?: string;
+  detail?: string | undefined;
+  className?: string | undefined;
 }
 
 export function ErrorState({
@@ -128,8 +136,8 @@ export function PageHeader({
   ...props
 }: ComponentProps<'header'> & {
   title: string;
-  description?: string;
-  action?: ReactNode;
+  description?: string | undefined;
+  action?: ReactNode | undefined;
 }) {
   return (
     <header

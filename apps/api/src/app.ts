@@ -11,6 +11,7 @@ import { healthRoute } from './routes/health.js';
 import { meRoute } from './routes/me.js';
 import { memberRoute } from './routes/members.js';
 import { organizationRoute } from './routes/organizations.js';
+import { projectRoute } from './routes/projects.js';
 import type { Services } from './services.js';
 import type { AppBindings } from './types/context.js';
 
@@ -62,7 +63,8 @@ export function createApp(services: Services) {
     .route('/', authRoute(services))
     .route('/', meRoute(services))
     .route('/', organizationRoute(services))
-    .route('/', memberRoute(services));
+    .route('/', memberRoute(services))
+    .route('/', projectRoute(services));
 }
 
 export type App = ReturnType<typeof createApp>;
