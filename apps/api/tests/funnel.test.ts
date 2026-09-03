@@ -156,8 +156,9 @@ describe('handler scoping', () => {
     });
     const body = (await response.json()) as { members: { user: { email: string } }[] };
 
-    // Six accounts exist; only the five members of this org are visible.
-    expect(body.members).toHaveLength(5);
+    // Seven accounts exist; only the six members of this org are visible
+    // (one per role, plus the second admin).
+    expect(body.members).toHaveLength(6);
     expect(body.members.map((m) => m.user.email)).not.toContain('outsider@example.test');
   });
 });
@@ -216,5 +217,152 @@ describe('deactivated accounts', () => {
       .update(schema.user)
       .set({ banned: false })
       .where(eq(schema.user.id, h.users.member.id));
+  });
+});
+
+describe('membership changes', () => {
+  /** The member row id for a given role in the fixture organization. */
+  async function memberIdFor(role: OrgRole): Promise<string> {
+    const { schema } = await import('@nexora/db');
+    const { and, eq } = await import('drizzle-orm');
+
+    const [row] = await h.db
+      .select({ id: schema.member.id })
+      .from(schema.member)
+      .where(
+        and(
+          eq(schema.member.organizationId, h.organizationId),
+          eq(schema.member.userId, h.users[role].id),
+        ),
+      );
+
+    return row?.id ?? '';
+  }
+
+  async function setRole(actor: OrgRole, targetMemberId: string, role: OrgRole) {
+    return h.request(`/orgs/${h.orgSlug}/members/${targetMemberId}/role`, {
+      method: 'PATCH',
+      cookie: h.users[actor].cookie,
+      body: JSON.stringify({ role }),
+    });
+  }
+
+  it('lets an owner promote a member', async () => {
+    const id = await memberIdFor('member');
+    const response = await setRole('owner', id, 'manager');
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ role: 'manager' });
+
+    // Put it back so later tests see the fixture as declared.
+    await setRole('owner', id, 'member');
+  });
+
+  it('refuses a peer demoting a peer', async () => {
+    // The escalation that matters: one admin demoting another and taking sole
+    // control. Better Auth's own updateMemberRole would allow this, which is
+    // why these routes exist. Uses the second admin - demoting yourself is
+    // refused for a different reason and would not prove the rule.
+    const { schema } = await import('@nexora/db');
+    const { and, eq } = await import('drizzle-orm');
+
+    const [peer] = await h.db
+      .select({ id: schema.member.id })
+      .from(schema.member)
+      .where(
+        and(
+          eq(schema.member.organizationId, h.organizationId),
+          eq(schema.member.userId, h.peerAdmin.id),
+        ),
+      );
+
+    const response = await setRole('admin', peer?.id ?? '', 'member');
+    expect(response.status).toBe(403);
+  });
+
+  it('refuses an admin touching an owner', async () => {
+    const id = await memberIdFor('owner');
+    const response = await setRole('admin', id, 'member');
+
+    expect(response.status).toBe(403);
+  });
+
+  it('refuses granting a role above the actor', async () => {
+    const id = await memberIdFor('member');
+    const response = await setRole('admin', id, 'owner');
+
+    expect(response.status).toBe(403);
+  });
+
+  it('refuses a member changing anyone', async () => {
+    const id = await memberIdFor('guest');
+    const response = await setRole('member', id, 'admin');
+
+    expect(response.status).toBe(403);
+  });
+
+  it('refuses changing your own role', async () => {
+    const id = await memberIdFor('owner');
+    const response = await setRole('owner', id, 'admin');
+
+    expect(response.status).toBe(400);
+  });
+
+  it('gives 404 for a member id from another organization', async () => {
+    const { schema } = await import('@nexora/db');
+    const { newId } = await import('@nexora/db');
+
+    const otherOrgId = newId();
+    await h.db
+      .insert(schema.organization)
+      .values({ id: otherOrgId, name: 'Other', slug: `other-${otherOrgId.slice(0, 8)}` });
+
+    const outsiderMemberId = newId();
+    await h.db.insert(schema.member).values({
+      id: outsiderMemberId,
+      organizationId: otherOrgId,
+      userId: h.outsider.id,
+      role: 'member',
+    });
+
+    // A valid member id, but belonging to a different tenant.
+    const response = await setRole('owner', outsiderMemberId, 'admin');
+    expect(response.status).toBe(404);
+  });
+
+  it('writes an audit row for a role change', async () => {
+    const { schema } = await import('@nexora/db');
+    const { and, eq } = await import('drizzle-orm');
+
+    const id = await memberIdFor('member');
+    await setRole('owner', id, 'manager');
+
+    const rows = await h.db
+      .select()
+      .from(schema.activities)
+      .where(
+        and(
+          eq(schema.activities.organizationId, h.organizationId),
+          eq(schema.activities.action, 'member.role_changed'),
+        ),
+      );
+
+    expect(rows.length).toBeGreaterThan(0);
+    const latest = rows[rows.length - 1];
+    expect(latest?.actorId).toBe(h.users.owner.id);
+    expect(latest?.changes).toMatchObject({ role: { to: 'manager' } });
+
+    await setRole('owner', id, 'member');
+  });
+
+  it('rejects an unknown role with 400, not 500', async () => {
+    const id = await memberIdFor('member');
+    const response = await h.request(`/orgs/${h.orgSlug}/members/${id}/role`, {
+      method: 'PATCH',
+      cookie: h.users.owner.cookie,
+      body: JSON.stringify({ role: 'superuser' }),
+    });
+
+    expect(response.status).toBe(400);
   });
 });

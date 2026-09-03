@@ -2,12 +2,14 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { secureHeaders } from 'hono/secure-headers';
-import { corsOrigins, isDevelopment } from './env.js';
+import { corsOrigins, isDevelopment, isProduction } from './env.js';
 import { onError, onNotFound } from './middleware/error.js';
 import { requestId } from './middleware/request-id.js';
 import { authRoute } from './routes/auth.js';
+import { devRoute } from './routes/dev.js';
 import { healthRoute } from './routes/health.js';
 import { meRoute } from './routes/me.js';
+import { memberRoute } from './routes/members.js';
 import { organizationRoute } from './routes/organizations.js';
 import type { Services } from './services.js';
 import type { AppBindings } from './types/context.js';
@@ -52,11 +54,15 @@ export function createApp(services: Services) {
   base.onError(onError);
   base.notFound(onNotFound);
 
+  // Test-only helpers, and only outside production - see routes/dev.ts.
+  if (!isProduction) base.route('/', devRoute());
+
   return base
     .route('/', healthRoute)
     .route('/', authRoute(services))
     .route('/', meRoute(services))
-    .route('/', organizationRoute(services));
+    .route('/', organizationRoute(services))
+    .route('/', memberRoute(services));
 }
 
 export type App = ReturnType<typeof createApp>;

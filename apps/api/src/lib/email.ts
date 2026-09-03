@@ -8,7 +8,8 @@ import {
   type Rendered,
 } from '@nexora/email';
 import type { AuthEmail } from '@nexora/auth';
-import { env } from '../env.js';
+import { env, isProduction } from '../env.js';
+import { remember } from './dev-outbox.js';
 
 const mailer = createMailer({
   apiKey: env.RESEND_API_KEY,
@@ -25,6 +26,13 @@ const mailer = createMailer({
  */
 export async function sendEmail(email: AuthEmail): Promise<void> {
   const rendered = render(email);
+
+  // Outside production, keep the link so the journey test can read it back
+  // instead of needing a real mailbox.
+  if (!isProduction && email.url) {
+    remember({ to: email.to, url: email.url, subject: rendered.subject });
+  }
+
   await mailer.send({ to: email.to, ...rendered });
 }
 

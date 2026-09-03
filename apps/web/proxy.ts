@@ -29,7 +29,6 @@ const PROTECTED =
   /^\/(?!sign-in|sign-up|reset-password|accept-invite|two-factor|pricing|changelog|portal)[^/]+/;
 
 /** Auth screens a signed-in user should not linger on. */
-const AUTH_ROUTES = /^\/(sign-in|sign-up)$/;
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -41,10 +40,6 @@ export function proxy(request: NextRequest) {
     // Come back here once signed in.
     url.searchParams.set('next', pathname);
     return NextResponse.redirect(url);
-  }
-
-  if (hasSession && AUTH_ROUTES.test(pathname)) {
-    return NextResponse.redirect(new URL('/', request.url));
   }
 
   return NextResponse.next();

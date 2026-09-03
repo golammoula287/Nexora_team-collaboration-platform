@@ -1,6 +1,6 @@
 import { createAuth } from '@nexora/auth';
 import { createDatabase } from '@nexora/db';
-import { env, requireEnv } from '../env.js';
+import { env, isProduction, requireEnv } from '../env.js';
 import { sendEmail } from './email.js';
 import type { Services } from '../services.js';
 
@@ -20,6 +20,14 @@ export function createServices(): Services {
     trustedOrigins: [env.WEB_URL],
     cookieDomain: env.AUTH_COOKIE_DOMAIN,
     sendEmail,
+    /*
+     * Better Auth's limiter is in-memory and per-process, which is the wrong
+     * shape for both ends of the range: it does nothing across instances in
+     * production, and it blocks repeated end-to-end runs locally. Real rate
+     * limiting is phase 9's job, backed by Upstash. Until then it stays on in
+     * production and off everywhere else.
+     */
+    disableRateLimit: !isProduction,
     socialProviders: {
       ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
         ? { google: { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET } }

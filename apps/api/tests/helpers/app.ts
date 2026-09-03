@@ -30,6 +30,12 @@ export interface ApiHarness {
   organizationId: string;
   /** One signed-in user per org role, plus an outsider who belongs to no org. */
   users: Record<OrgRole, TestUser>;
+  /**
+   * A SECOND admin. Needed to test the peer rule honestly: with only one admin
+   * in the fixture, "an admin demoting an admin" is really self-demotion, which
+   * is refused for a different reason.
+   */
+  peerAdmin: TestUser;
   outsider: TestUser;
   request(path: string, init?: RequestInit & { cookie?: string }): Promise<Response>;
   close(): Promise<void>;
@@ -115,6 +121,14 @@ export async function createApiHarness(): Promise<ApiHarness> {
     users[role] = { ...base, role };
   }
 
+  const peerAdminBase = await makeUser('peer-admin@example.test', 'Peer Admin');
+  await harness.db.insert(schema.member).values({
+    organizationId,
+    userId: peerAdminBase.id,
+    role: 'admin',
+  });
+  const peerAdmin: TestUser = { ...peerAdminBase, role: 'admin' };
+
   // Belongs to no organization: used to prove a non-member gets 404, not 403.
   const outsiderBase = await makeUser('outsider@example.test', 'Outsider');
   const outsider: TestUser = { ...outsiderBase, role: 'member' };
@@ -125,6 +139,7 @@ export async function createApiHarness(): Promise<ApiHarness> {
     orgSlug,
     organizationId,
     users,
+    peerAdmin,
     outsider,
     request,
     close: harness.close,

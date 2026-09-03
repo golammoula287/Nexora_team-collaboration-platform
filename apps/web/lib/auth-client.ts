@@ -8,6 +8,7 @@ import {
   organizationClient,
   twoFactorClient,
 } from 'better-auth/client/plugins';
+import { ac, roles } from '@nexora/shared';
 import { API_URL } from './env';
 
 /**
@@ -24,7 +25,9 @@ export const authClient = createAuthClient({
   basePath: '/api/auth',
   fetchOptions: { credentials: 'include' },
   plugins: [
-    organizationClient(),
+    // The same access-control definition the server uses, so the client
+    // knows our roles (manager, guest) rather than Better Auth defaults.
+    organizationClient({ ac, roles }),
     adminClient(),
     twoFactorClient(),
     passkeyClient(),

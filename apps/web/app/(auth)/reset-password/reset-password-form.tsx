@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { authClient } from '../../../lib/auth-client';
+import { APP_URL } from '../../../lib/env';
 import { withQuery } from '../../../lib/routes';
 
 /**
@@ -24,7 +25,13 @@ function RequestLink() {
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPending(true);
-    await authClient.requestPasswordReset({ email, redirectTo: '/reset-password' });
+    // Absolute, and pointing at the WEB app. A relative path is resolved
+    // against the API's own origin, so the emailed link would land on :4000
+    // where no such page exists.
+    await authClient.requestPasswordReset({
+      email,
+      redirectTo: `${APP_URL}/reset-password`,
+    });
     // Always report success, even for an unknown address. Anything else turns
     // this form into a way to test which emails have accounts.
     setSent(true);
