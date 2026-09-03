@@ -3,7 +3,7 @@ import { can, type OrgRole } from '@nexora/shared';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { serverApi } from '../../../../../lib/api.server';
-import { Board } from './board';
+import { SelectableBoard } from './selectable-board';
 import { NewTaskButton } from './new-task-button';
 
 export const metadata: Metadata = { title: 'Project' };
@@ -51,7 +51,12 @@ export default async function ProjectPage({
         }
       />
 
-      <Board orgSlug={orgSlug} columns={statuses} tasks={tasks} />
+      <SelectableBoard
+        orgSlug={orgSlug}
+        columns={statuses}
+        tasks={tasks}
+        canDelete={can(role, 'delete', 'task')}
+      />
     </div>
   );
 }

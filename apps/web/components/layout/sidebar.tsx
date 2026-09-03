@@ -21,6 +21,7 @@ import {
   Plus,
   Settings,
   Target,
+  Trash2,
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -46,6 +47,7 @@ const NAV = [
 ] as const;
 
 const ADMIN_NAV = [
+  { key: 'trash', label: 'Trash', icon: Trash2 },
   { key: 'settings', label: 'Settings', icon: Settings },
   { key: 'admin', label: 'Members', icon: Users },
 ] as const;
