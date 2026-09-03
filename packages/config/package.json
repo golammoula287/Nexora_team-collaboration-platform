@@ -3,11 +3,15 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "main": "./index.ts",
-  "types": "./index.ts",
-  "exports": { "./eslint": "./eslint.js", "./tsconfig": "./tsconfig.base.json" },
-  "scripts": {
-    "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+  "exports": {
+    "./eslint/base": "./eslint/base.js",
+    "./eslint/node": "./eslint/node.js",
+    "./eslint/next": "./eslint/next.js"
+  },
+  "dependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.9.1",
+    "globals": "^17.12.0",
+    "typescript-eslint": "^8.69.0"
   }
 }

@@ -1,0 +1,8 @@
+# Normalize line endings so the repo is identical on every machine.
+* text=auto eol=lf
+
+# Binary / generated
+pnpm-lock.yaml linguist-generated=true
+*.png binary
+*.jpg binary
+*.woff2 binary
