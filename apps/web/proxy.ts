@@ -17,7 +17,14 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 const SESSION_COOKIE = 'nexora.session_token';
 
-/** Routes that require a session cookie to be worth rendering. */
+/**
+ * Routes that require a session cookie to be worth rendering.
+ *
+ * A single unknown segment could be an organization slug, so it counts as
+ * protected: sending an anonymous visitor to sign-in is right, and a 404 there
+ * would leak whether a given workspace exists. Public pages must therefore be
+ * listed explicitly below.
+ */
 const PROTECTED =
   /^\/(?!sign-in|sign-up|reset-password|accept-invite|two-factor|pricing|changelog|portal)[^/]+/;
 

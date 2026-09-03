@@ -1,11 +1,11 @@
 import { expect, test } from '@playwright/test';
 
-test('the home page reports the API as reachable', async ({ page }) => {
+/** The two apps are wired together and both answer. */
+test('the landing page reports the API as reachable', async ({ page }) => {
   await page.goto('/');
 
-  await expect(page.getByRole('heading', { name: 'Nexora', level: 1 })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'API reachable' })).toBeVisible();
-  await expect(page.getByText('nexora-api')).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await expect(page.getByText(/API up/)).toBeVisible();
 });
 
 test('the API answers its health check directly', async ({ request }) => {

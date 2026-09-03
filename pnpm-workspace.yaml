@@ -15,3 +15,6 @@ allowBuilds:
   # Drizzle on Postgres, so neither is ever loaded.
   "@prisma/client": false
   better-sqlite3: false
+
+minimumReleaseAgeExclude:
+  - lucide-react@1.40.0
