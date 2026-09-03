@@ -1,15 +1,13 @@
-import { Badge, Card, CardContent, EmptyState, PageHeader, StatusDot } from '@nexora/ui';
-import { ListTodo } from 'lucide-react';
+import { PageHeader, StatusDot } from '@nexora/ui';
+import { can, type OrgRole } from '@nexora/shared';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { serverApi } from '../../../../../lib/api.server';
+import { Board } from './board';
+import { NewTaskButton } from './new-task-button';
 
 export const metadata: Metadata = { title: 'Project' };
 
-/**
- * The project detail shell: header, board columns, and the empty state that
- * phase 4.2 fills with tasks.
- */
 export default async function ProjectPage({
   params,
 }: {
@@ -18,14 +16,20 @@ export default async function ProjectPage({
   const { orgSlug, projectId } = await params;
   const api = await serverApi();
 
-  const response = await api.orgs[':orgSlug'].projects[':projectId'].$get({
-    param: { orgSlug, projectId },
-  });
+  const [projectResponse, tasksResponse, meResponse] = await Promise.all([
+    api.orgs[':orgSlug'].projects[':projectId'].$get({ param: { orgSlug, projectId } }),
+    api.orgs[':orgSlug'].tasks.$get({ param: { orgSlug }, query: { projectId } }),
+    api.me.$get(),
+  ]);
 
-  // The API gives 404 both for "no such project" and "not yours", deliberately.
-  if (!response.ok) notFound();
+  // The API answers 404 both for "no such project" and "not yours", by design.
+  if (!projectResponse.ok) notFound();
 
-  const { project, statuses } = await response.json();
+  const { project, statuses } = await projectResponse.json();
+  const { tasks } = tasksResponse.ok ? await tasksResponse.json() : { tasks: [] };
+  const { organizations } = meResponse.ok ? await meResponse.json() : { organizations: [] };
+
+  const role = (organizations.find((org) => org.slug === orgSlug)?.role ?? 'member') as OrgRole;
 
   return (
     <div className="space-y-6">
@@ -33,45 +37,21 @@ export default async function ProjectPage({
         title={project.name}
         description={project.description ?? undefined}
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <span className="text-fg-subtle font-mono text-[13px]">{project.key}</span>
             <StatusDot
               tone={project.status === 'active' ? 'accent' : 'neutral'}
               label={project.status.replace('-', ' ')}
             />
+            {/* Cosmetic: the API refuses regardless of what is rendered here. */}
+            {can(role, 'create', 'task') ? (
+              <NewTaskButton orgSlug={orgSlug} projectId={projectId} statuses={statuses} />
+            ) : null}
           </div>
         }
       />
 
-      <section aria-labelledby="board-heading" className="space-y-3">
-        <h2 id="board-heading" className="text-fg text-[16px] font-semibold">
-          Board
-        </h2>
-
-        {/* Columns exist from creation; cards arrive in phase 4.2. */}
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {statuses.map((status) => (
-            <Card key={status.id} className="bg-surface-2">
-              <CardContent className="space-y-3 p-3 pt-3">
-                <div className="flex items-center justify-between">
-                  <StatusDot
-                    tone={status.category === 'done' ? 'success' : 'neutral'}
-                    label={status.name}
-                  />
-                  <Badge tone="neutral">0</Badge>
-                </div>
-                <p className="text-fg-subtle text-[12px]">No tasks yet</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <EmptyState
-        icon={<ListTodo />}
-        title="Tasks arrive in phase 4.2"
-        description="The board, its columns and this project are real. Cards, drag-ordering and the other three views come next."
-      />
+      <Board orgSlug={orgSlug} columns={statuses} tasks={tasks} />
     </div>
   );
 }
