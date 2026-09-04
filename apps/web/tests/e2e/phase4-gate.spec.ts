@@ -221,12 +221,15 @@ test('9. bulk edit, soft delete, restore', async () => {
     .selectOption('urgent');
   await expect(page.getByText('Priority updated')).toBeVisible({ timeout: 20_000 });
 
-  // Both tasks took it - proved through the priority filter rather than by
+  // Both tasks took it - proved through the filter builder rather than by
   // eyeballing a badge that also exists as an <option> in three selects.
-  await page.getByLabel('Filter by priority').selectOption('urgent');
+  await page.getByRole('button', { name: 'Filter' }).click();
+  await page.getByRole('button', { name: 'Condition', exact: true }).click();
   await expect(page.getByText('2 of 4')).toBeVisible({ timeout: 20_000 });
-  await page.getByLabel('Filter by priority').selectOption('');
+
+  await page.getByRole('button', { name: 'Remove the Priority condition' }).click();
   await expect(page.getByText('4 of 4')).toBeVisible();
+  await page.getByRole('button', { name: 'Filter' }).click();
 
   // Soft delete one of them.
   await page.getByRole('checkbox', { name: 'Select Ship it' }).click();

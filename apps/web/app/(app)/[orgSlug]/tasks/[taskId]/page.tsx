@@ -1,8 +1,11 @@
 import { Avatar, Badge, Card, CardContent, PageHeader, StatusDot } from '@nexora/ui';
+import { can, type OrgRole } from '@nexora/shared';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { serverApi } from '../../../../../lib/api.server';
+import { Checklists } from './checklists';
+import { TaskActions } from './task-actions';
 
 export const metadata: Metadata = { title: 'Task' };
 
@@ -26,27 +29,54 @@ export default async function TaskPage({
   const { orgSlug, taskId } = await params;
   const api = await serverApi();
 
-  const response = await api.orgs[':orgSlug'].tasks[':taskId'].$get({
-    param: { orgSlug, taskId },
-  });
+  // Everything the page needs, in parallel - the checklists and watchers are
+  // separate resources, not separate round trips taken one after another.
+  const [response, checklistResponse, watcherResponse, meResponse, spaceResponse] =
+    await Promise.all([
+      api.orgs[':orgSlug'].tasks[':taskId'].$get({ param: { orgSlug, taskId } }),
+      api.orgs[':orgSlug'].tasks[':taskId'].checklists.$get({ param: { orgSlug, taskId } }),
+      api.orgs[':orgSlug'].tasks[':taskId'].watchers.$get({ param: { orgSlug, taskId } }),
+      api.me.$get(),
+      api.orgs[':orgSlug'].spaces.$get({ param: { orgSlug } }),
+    ]);
 
   if (!response.ok) notFound();
 
   const { task, subtasks, dependencies, assignees, history, blockedBySlipped } =
     await response.json();
 
+  const { checklists } = checklistResponse.ok
+    ? await checklistResponse.json()
+    : { checklists: [] };
+  const { watchers } = watcherResponse.ok ? await watcherResponse.json() : { watchers: [] };
+  const { spaces } = spaceResponse.ok ? await spaceResponse.json() : { spaces: [] };
+  const me = meResponse.ok ? await meResponse.json() : null;
+
+  const role = (me?.organizations.find((org) => org.slug === orgSlug)?.role ?? 'member') as OrgRole;
+
   return (
     <div className="max-w-3xl space-y-6">
       <PageHeader
         title={task.title}
         action={
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <span className="text-fg-subtle font-mono text-[13px]">#{task.number}</span>
             {task.priority !== 'none' ? <Badge tone="warning">{task.priority}</Badge> : null}
             <StatusDot
               tone={task.completedAt ? 'success' : 'neutral'}
               label={task.completedAt ? 'done' : 'open'}
             />
+            {me ? (
+              <TaskActions
+                orgSlug={orgSlug}
+                taskId={taskId}
+                taskTitle={task.title}
+                watchers={watchers}
+                currentUserId={me.user.id}
+                spaces={spaces}
+                canCreateProject={can(role, 'create', 'project')}
+              />
+            ) : null}
           </div>
         }
       />
@@ -110,6 +140,13 @@ export default async function TaskPage({
           </CardContent>
         </Card>
       </div>
+
+      <Checklists
+        orgSlug={orgSlug}
+        taskId={taskId}
+        checklists={checklists}
+        canEdit={can(role, 'update', 'task')}
+      />
 
       <section aria-labelledby="subtasks-heading" className="space-y-2">
         <h2 id="subtasks-heading" className="text-fg text-[16px] font-semibold">

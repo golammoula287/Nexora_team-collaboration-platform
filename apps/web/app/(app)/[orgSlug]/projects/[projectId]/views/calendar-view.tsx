@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { DATE_LOCALE, PRIORITY_TONE, patchTask, today, type ViewTask } from './shared';
 
 /**
- * Month calendar, keyed on the due date.
+ * Calendar, keyed on the due date, in month or week.
  *
  * Dragging a task to a different day reschedules it; the keyboard equivalent is
  * the date field on the task itself, and each day cell is a real drop target
@@ -34,17 +34,44 @@ function gridStart(year: number, month: number): Date {
   return first;
 }
 
-export function CalendarView({ orgSlug, tasks }: { orgSlug: string; tasks: ViewTask[] }) {
+/** The Monday on or before a given day. */
+function weekStart(date: Date): Date {
+  const start = new Date(date);
+  start.setUTCDate(start.getUTCDate() - ((start.getUTCDay() + 6) % 7));
+  return start;
+}
+
+export function CalendarView({
+  orgSlug,
+  tasks,
+  span = 'month',
+}: {
+  orgSlug: string;
+  tasks: ViewTask[];
+  /** A week is the same grid with one row - a planning horizon, not a new view. */
+  span?: 'month' | 'week';
+}) {
   const router = useRouter();
   const now = new Date();
   const [year, setYear] = useState(now.getUTCFullYear());
   const [month, setMonth] = useState(now.getUTCMonth());
+  const [weekAnchor, setWeekAnchor] = useState(() => weekStart(new Date()));
   const [dragging, setDragging] = useState<string | null>(null);
 
-  // Six weeks of seven days. Grouped into weeks rather than a flat 42, because
-  // an ARIA grid needs real rows between the grid and its cells - a flat list of
+  // Weeks of seven days. Grouped into weeks rather than a flat list, because an
+  // ARIA grid needs real rows between the grid and its cells - a flat list of
   // gridcells is an orphaned-role violation, not just untidy markup.
   const weeks = useMemo(() => {
+    if (span === 'week') {
+      return [
+        Array.from({ length: 7 }, (_, day) => {
+          const date = new Date(weekAnchor);
+          date.setUTCDate(weekAnchor.getUTCDate() + day);
+          return date;
+        }),
+      ];
+    }
+
     const start = gridStart(year, month);
     return Array.from({ length: 6 }, (_, week) =>
       Array.from({ length: 7 }, (_, day) => {
@@ -53,7 +80,7 @@ export function CalendarView({ orgSlug, tasks }: { orgSlug: string; tasks: ViewT
         return date;
       }),
     );
-  }, [year, month]);
+  }, [year, month, span, weekAnchor]);
 
   const byDay = useMemo(() => {
     const map = new Map<string, ViewTask[]>();
@@ -67,9 +94,22 @@ export function CalendarView({ orgSlug, tasks }: { orgSlug: string; tasks: ViewT
   const undated = tasks.filter((task) => !task.dueDate && task.parentTaskId === null);
 
   function shift(delta: number) {
+    if (span === 'week') {
+      const next = new Date(weekAnchor);
+      next.setUTCDate(weekAnchor.getUTCDate() + delta * 7);
+      setWeekAnchor(next);
+      return;
+    }
+
     const date = new Date(Date.UTC(year, month + delta, 1));
     setYear(date.getUTCFullYear());
     setMonth(date.getUTCMonth());
+  }
+
+  function goToToday() {
+    setYear(now.getUTCFullYear());
+    setMonth(now.getUTCMonth());
+    setWeekAnchor(weekStart(new Date()));
   }
 
   async function reschedule(taskId: string, dueDate: string) {
@@ -79,30 +119,41 @@ export function CalendarView({ orgSlug, tasks }: { orgSlug: string; tasks: ViewT
     }
   }
 
-  const monthLabel = new Date(Date.UTC(year, month, 1)).toLocaleDateString(DATE_LOCALE, {
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  });
+  const monthLabel =
+    span === 'week'
+      ? `Week of ${weekAnchor.toLocaleDateString(DATE_LOCALE, {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+          timeZone: 'UTC',
+        })}`
+      : new Date(Date.UTC(year, month, 1)).toLocaleDateString(DATE_LOCALE, {
+          month: 'long',
+          year: 'numeric',
+          timeZone: 'UTC',
+        });
 
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" aria-label="Previous month" onClick={() => shift(-1)}>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={span === 'week' ? 'Previous week' : 'Previous month'}
+          onClick={() => shift(-1)}
+        >
           <ChevronLeft aria-hidden="true" />
         </Button>
         <h3 className="text-fg min-w-[10rem] text-center text-[14px] font-medium">{monthLabel}</h3>
-        <Button variant="ghost" size="icon" aria-label="Next month" onClick={() => shift(1)}>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={span === 'week' ? 'Next week' : 'Next month'}
+          onClick={() => shift(1)}
+        >
           <ChevronRight aria-hidden="true" />
         </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => {
-            setYear(now.getUTCFullYear());
-            setMonth(now.getUTCMonth());
-          }}
-        >
+        <Button variant="secondary" size="sm" onClick={goToToday}>
           Today
         </Button>
       </div>
@@ -125,7 +176,7 @@ export function CalendarView({ orgSlug, tasks }: { orgSlug: string; tasks: ViewT
             <div key={`${year}-${month}-w${weekIndex}`} role="row" className="grid grid-cols-7">
               {week.map((date) => {
                 const key = toKey(date);
-                const inMonth = date.getUTCMonth() === month;
+                const inMonth = span === 'week' || date.getUTCMonth() === month;
                 const isToday = key === today();
                 const dayTasks = byDay.get(key) ?? [];
 
@@ -158,7 +209,7 @@ export function CalendarView({ orgSlug, tasks }: { orgSlug: string; tasks: ViewT
                     </div>
 
                     <ul className="space-y-1">
-                      {dayTasks.slice(0, 3).map((task) => (
+                      {(span === 'week' ? dayTasks : dayTasks.slice(0, 3)).map((task) => (
                         <li key={task.id}>
                           <Link
                             href={`/${orgSlug}/tasks/${task.id}`}
@@ -171,7 +222,7 @@ export function CalendarView({ orgSlug, tasks }: { orgSlug: string; tasks: ViewT
                           </Link>
                         </li>
                       ))}
-                      {dayTasks.length > 3 ? (
+                      {span === 'month' && dayTasks.length > 3 ? (
                         <li className="text-fg-subtle px-1 text-[11px]">
                           +{dayTasks.length - 3} more
                         </li>

@@ -101,11 +101,28 @@ export function keyBetween(before: string | null, after: string | null): string 
 }
 
 /**
+ * Digits with '0' removed, for `nthPosition`.
+ *
+ * A canonical key may not end in '0' (see `assertValid`), and counting in
+ * base 62 produces one every 62nd item - starting with the very first, since
+ * `nthPosition(0)` used to yield "10". Any list seeded that way had a first
+ * element that `keyBetween` refused as a neighbour, so it could never be
+ * reordered. Counting in base 61 with no zero digit makes a trailing zero
+ * unrepresentable rather than merely unlikely.
+ */
+const NONZERO_DIGITS = DIGITS.slice(1);
+const NONZERO_BASE = NONZERO_DIGITS.length;
+
+/**
  * The nth key in a stable ascending sequence.
  *
  * For seeds and fixtures, where the whole list is known up front. Repeatedly
  * calling `keyBetween(previous, null)` would work but converges towards 'z' and
  * lengthens the keys; this stays short and is O(1) per item.
+ *
+ * Every key it returns is a valid `keyBetween` neighbour - asserted in the
+ * tests, because the two functions being subtly incompatible is exactly the
+ * kind of thing that only shows up on the first drag.
  */
 export function nthPosition(n: number): string {
   if (n < 0 || !Number.isInteger(n)) {
@@ -115,8 +132,8 @@ export function nthPosition(n: number): string {
   let remaining = n;
   let out = '';
   do {
-    out = (DIGITS[remaining % BASE] as string) + out;
-    remaining = Math.floor(remaining / BASE);
+    out = (NONZERO_DIGITS[remaining % NONZERO_BASE] as string) + out;
+    remaining = Math.floor(remaining / NONZERO_BASE);
   } while (remaining > 0);
 
   // Prefix with the length so shorter keys sort before longer ones.

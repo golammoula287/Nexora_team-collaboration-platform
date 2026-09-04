@@ -10,7 +10,7 @@ import {
 import { authorize } from '../middleware/authorize.js';
 import { requireOrg, resolveProjectRole } from '../middleware/org.js';
 import { requireSession } from '../middleware/session.js';
-import { requestMeta } from '../lib/audit.js';
+import { actorFrom } from '../lib/actor.js';
 import {
   createProject,
   deleteProject,
@@ -19,12 +19,10 @@ import {
   listTrashedProjects,
   restoreProject,
   updateProject,
-  type ActorContext,
 } from '../services/projects.js';
 import { createSpace, listSpaces, updateSpace } from '../services/spaces.js';
 import type { Services } from '../services.js';
 import type { AppBindings } from '../types/context.js';
-import type { Context } from 'hono';
 
 /**
  * Spaces and projects - the first real resources, and the shape every later
@@ -36,14 +34,6 @@ import type { Context } from 'hono';
  * and permission are all settled, and the service owns the transaction.
  */
 
-function actorFrom(c: Context<AppBindings>): ActorContext {
-  const meta = requestMeta(c.req.raw.headers);
-  return {
-    organizationId: c.get('organization').id,
-    actorId: c.get('user').id,
-    ...meta,
-  };
-}
 
 export function projectRoute(services: Services) {
   const session = requireSession(services);

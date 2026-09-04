@@ -10,7 +10,7 @@ import {
 import { authorize } from '../middleware/authorize.js';
 import { requireOrg, resolveProjectRole } from '../middleware/org.js';
 import { requireSession } from '../middleware/session.js';
-import { requestMeta } from '../lib/audit.js';
+import { actorFrom } from '../lib/actor.js';
 import {
   addDependency,
   createTask,
@@ -20,19 +20,10 @@ import {
   moveTask,
   updateTask,
 } from '../services/tasks.js';
-import type { ActorContext } from '../services/projects.js';
 import type { Services } from '../services.js';
 import type { AppBindings } from '../types/context.js';
-import type { Context } from 'hono';
 
 /** Tasks, behind the same funnel as everything else. */
-function actorFrom(c: Context<AppBindings>): ActorContext {
-  return {
-    organizationId: c.get('organization').id,
-    actorId: c.get('user').id,
-    ...requestMeta(c.req.raw.headers),
-  };
-}
 
 export function taskRoute(services: Services) {
   const session = requireSession(services);

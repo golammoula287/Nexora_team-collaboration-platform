@@ -5,29 +5,20 @@ import { bulkUpdateTasksSchema } from '@nexora/shared';
 import { authorize } from '../middleware/authorize.js';
 import { requireOrg } from '../middleware/org.js';
 import { requireSession } from '../middleware/session.js';
-import { requestMeta } from '../lib/audit.js';
+import { actorFrom } from '../lib/actor.js';
 import {
   bulkDeleteTasks,
   bulkUpdateTasks,
   listTrashedTasks,
   restoreTasks,
 } from '../services/task-operations.js';
-import type { ActorContext } from '../services/projects.js';
 import type { Services } from '../services.js';
 import type { AppBindings } from '../types/context.js';
-import type { Context } from 'hono';
 
 const taskIdsSchema = z.object({
   taskIds: z.array(z.uuid()).min(1, 'Select at least one task.').max(200),
 });
 
-function actorFrom(c: Context<AppBindings>): ActorContext {
-  return {
-    organizationId: c.get('organization').id,
-    actorId: c.get('user').id,
-    ...requestMeta(c.req.raw.headers),
-  };
-}
 
 /**
  * Bulk operations and Trash.

@@ -62,8 +62,10 @@ test.beforeAll(async ({ browser }) => {
 });
 
 test('an empty board shows all four columns', async () => {
+  // The generous first timeout is for a cold route compile in dev, not for a
+  // slow query: this is the first assertion to land on the project page.
   for (const column of ['Backlog', 'In progress', 'In review', 'Done']) {
-    await expect(page.getByRole('heading', { name: column })).toBeVisible();
+    await expect(page.getByRole('heading', { name: column })).toBeVisible({ timeout: 30_000 });
   }
   await expect(page.getByText('Nothing here').first()).toBeVisible();
 });
@@ -107,8 +109,10 @@ test('opens the task and shows its change log', async () => {
   ).toBeVisible();
 
   // Every mutation writes an audit row; the change log is those rows read back.
+  // Scoped to the section: a toast elsewhere on the page also says "created".
   await expect(page.getByRole('heading', { name: 'History' })).toBeVisible();
-  await expect(page.getByText(/created/)).toBeVisible();
+  const history = page.locator('section').filter({ has: page.getByRole('heading', { name: 'History' }) });
+  await expect(history.getByText(/created/)).toBeVisible();
 
   await expect(page.getByRole('heading', { name: /^Subtasks/ })).toBeVisible();
   await expect(page.getByRole('heading', { name: /^Dependencies/ })).toBeVisible();

@@ -1,15 +1,34 @@
 'use client';
 
 import { Badge, Button, Input, Spinner, cn } from '@nexora/ui';
-import { TASK_PRIORITIES } from '@nexora/shared';
-import { CalendarDays, GanttChartSquare, KanbanSquare, List, Trash2, X } from 'lucide-react';
+import {
+  LIST_COLUMNS,
+  TASK_PRIORITIES,
+  countConditions,
+  emptyFilter,
+  matchesFilter,
+  type FilterGroup,
+  type ListColumn,
+  type ViewConfig,
+} from '@nexora/shared';
+import {
+  CalendarDays,
+  Filter,
+  GanttChartSquare,
+  KanbanSquare,
+  List,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { api } from '../../../../../../lib/api';
 import { BoardView } from './board-view';
 import { CalendarView } from './calendar-view';
+import { FilterBuilder } from './filter-builder';
 import { ListView } from './list-view';
+import { SavedViews, type SavedView } from './saved-views';
 import { TimelineView, type DependencyEdge } from './timeline-view';
 import { isOverdue, type ViewColumn, type ViewTask } from './shared';
 
@@ -23,34 +42,59 @@ const VIEWS: { key: ViewKey; label: string; icon: typeof List }[] = [
 ];
 
 /**
- * The four views, the filter bar, and the selection that spans them.
+ * The four views, the filter, the saved views, and the selection that spans
+ * them all.
  *
- * Selection and filters live at this level so switching view keeps both - a
- * user who has selected six tasks on the board and switches to the list has
- * not changed their mind about the six tasks.
+ * Everything a saved view can capture lives in one `ViewConfig` object here:
+ * the filter tree, grouping, sort, which list columns are shown and how wide
+ * they are. That is deliberate - "save this view" then means serialising one
+ * value rather than gathering state from four components that each kept their
+ * own, which is how a saved view ends up not restoring what you saved.
+ *
+ * The quick search box is separate from the filter tree on purpose. Typing
+ * three letters to find a card is not the same act as building a filter, and
+ * folding it into the tree would make every keystroke edit a saved view.
  */
+const DEFAULT_CONFIG: ViewConfig = {
+  groupBy: 'none',
+  sortKey: 'position',
+  sortAscending: true,
+};
+
 export function ProjectViews({
   orgSlug,
+  projectId,
   columns,
   tasks,
   dependencies,
+  savedViews,
+  currentUserId,
+  initialView,
   canDelete,
 }: {
   orgSlug: string;
+  projectId: string;
   columns: ViewColumn[];
   tasks: ViewTask[];
   dependencies: DependencyEdge[];
+  savedViews: SavedView[];
+  currentUserId: string;
+  /** From `?view=<token>`, or the caller's default view. */
+  initialView: SavedView | null;
   canDelete: boolean;
 }) {
   const router = useRouter();
-  const [view, setView] = useState<ViewKey>('board');
+
+  const [view, setView] = useState<ViewKey>((initialView?.layout as ViewKey) ?? 'board');
+  const [activeViewId, setActiveViewId] = useState<string | null>(initialView?.id ?? null);
+  const [config, setConfig] = useState<ViewConfig>(
+    (initialView?.config as ViewConfig | undefined) ?? DEFAULT_CONFIG,
+  );
+
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [pending, setPending] = useState(false);
-
   const [search, setSearch] = useState('');
-  const [priority, setPriority] = useState('');
-  const [assignee, setAssignee] = useState('');
-  const [onlyOverdue, setOnlyOverdue] = useState(false);
+  const [builderOpen, setBuilderOpen] = useState(false);
 
   const people = useMemo(() => {
     const map = new Map<string, string>();
@@ -60,20 +104,30 @@ export function ProjectViews({
     return [...map.entries()].map(([id, name]) => ({ id, name }));
   }, [tasks]);
 
+  const filter = config.filter ?? emptyFilter();
+
   const filtered = useMemo(() => {
     const needle = search.trim().toLowerCase();
     return tasks.filter((task) => {
       if (needle && !task.title.toLowerCase().includes(needle)) return false;
-      if (priority && task.priority !== priority) return false;
-      if (assignee && !task.assignees.some((person) => person.userId === assignee)) return false;
-      if (onlyOverdue && !isOverdue(task)) return false;
-      return true;
+      // The rows are already org- and project-scoped by SQL; this arranges them.
+      return matchesFilter({ ...task, labelIds: [] }, config.filter);
     });
-  }, [tasks, search, priority, assignee, onlyOverdue]);
+  }, [tasks, search, config.filter]);
 
-  const activeFilters = [search, priority, assignee, onlyOverdue ? 'overdue' : ''].filter(
-    Boolean,
-  ).length;
+  const conditionCount = countConditions(config.filter);
+  const overdueCount = filtered.filter(isOverdue).length;
+
+  function patchConfig(patch: Partial<ViewConfig>) {
+    setConfig((current) => ({ ...current, ...patch }));
+  }
+
+  function applySavedView(saved: SavedView | null) {
+    setActiveViewId(saved?.id ?? null);
+    setConfig((saved?.config as ViewConfig | undefined) ?? DEFAULT_CONFIG);
+    if (saved?.layout) setView(saved.layout as ViewKey);
+    setSelected(new Set());
+  }
 
   function toggle(taskId: string) {
     setSelected((current) => {
@@ -82,13 +136,6 @@ export function ProjectViews({
       else next.add(taskId);
       return next;
     });
-  }
-
-  function clearFilters() {
-    setSearch('');
-    setPriority('');
-    setAssignee('');
-    setOnlyOverdue(false);
   }
 
   async function applyPatch(patch: Record<string, unknown>, message: string) {
@@ -135,8 +182,21 @@ export function ProjectViews({
   const selectClass =
     'border-border bg-surface text-fg focus-visible:outline-ring h-8 rounded-sm border px-2 text-[13px] focus-visible:outline-2';
 
+  const visibleColumns = config.visibleColumns ?? [...LIST_COLUMNS];
+
   return (
     <div className="space-y-3">
+      <SavedViews
+        orgSlug={orgSlug}
+        projectId={projectId}
+        views={savedViews}
+        activeViewId={activeViewId}
+        currentUserId={currentUserId}
+        currentConfig={config}
+        currentLayout={view}
+        onApply={applySavedView}
+      />
+
       <div
         role="tablist"
         aria-label="View"
@@ -167,60 +227,88 @@ export function ProjectViews({
           type="search"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Filter by title…"
+          placeholder="Find by title…"
           aria-label="Filter tasks by title"
           className="h-8 w-[12rem]"
         />
 
-        <select
-          value={priority}
-          onChange={(event) => setPriority(event.target.value)}
-          aria-label="Filter by priority"
-          className={selectClass}
+        <Button
+          variant={conditionCount > 0 ? 'secondary' : 'ghost'}
+          size="sm"
+          aria-expanded={builderOpen}
+          aria-controls="filter-builder"
+          onClick={() => setBuilderOpen((open) => !open)}
         >
-          <option value="">Any priority</option>
-          {TASK_PRIORITIES.map((value) => (
-            <option key={value} value={value}>
-              {value}
-            </option>
-          ))}
-        </select>
+          <Filter aria-hidden="true" />
+          Filter
+          {conditionCount > 0 ? <Badge tone="accent">{conditionCount}</Badge> : null}
+        </Button>
 
-        <select
-          value={assignee}
-          onChange={(event) => setAssignee(event.target.value)}
-          aria-label="Filter by assignee"
-          className={selectClass}
-        >
-          <option value="">Anyone</option>
-          {people.map((person) => (
-            <option key={person.id} value={person.id}>
-              {person.name}
-            </option>
-          ))}
-        </select>
+        {view === 'list' ? (
+          <>
+            <select
+              value={config.groupBy}
+              onChange={(event) => patchConfig({ groupBy: event.target.value as 'none' })}
+              aria-label="Group by"
+              className={selectClass}
+            >
+              <option value="none">No grouping</option>
+              <option value="status">Group by column</option>
+              <option value="priority">Group by priority</option>
+              <option value="assignee">Group by assignee</option>
+            </select>
 
-        <label className="text-fg-muted inline-flex items-center gap-1.5 text-[13px]">
-          <input
-            type="checkbox"
-            checked={onlyOverdue}
-            onChange={(event) => setOnlyOverdue(event.target.checked)}
-            className="accent-accent size-3.5"
-          />
-          Overdue only
-        </label>
+            <ColumnPicker
+              visible={visibleColumns}
+              onChange={(next) => patchConfig({ visibleColumns: next })}
+            />
+          </>
+        ) : null}
 
-        {activeFilters > 0 ? (
-          <Button variant="ghost" size="sm" onClick={clearFilters}>
+        {view === 'calendar' ? (
+          <select
+            value={config.calendarSpan ?? 'month'}
+            onChange={(event) => patchConfig({ calendarSpan: event.target.value as 'month' })}
+            aria-label="Calendar span"
+            className={selectClass}
+          >
+            <option value="month">Month</option>
+            <option value="week">Week</option>
+          </select>
+        ) : null}
+
+        {conditionCount > 0 || search ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setSearch('');
+              patchConfig({ filter: emptyFilter() });
+            }}
+          >
             <X aria-hidden="true" />
-            Clear {activeFilters} filter{activeFilters === 1 ? '' : 's'}
+            Clear {conditionCount + (search ? 1 : 0)} filter
+            {conditionCount + (search ? 1 : 0) === 1 ? '' : 's'}
           </Button>
         ) : null}
 
-        <Badge tone="neutral" className="ml-auto">
-          {filtered.length} of {tasks.length}
-        </Badge>
+        <span className="ml-auto flex items-center gap-2">
+          {overdueCount > 0 ? <Badge tone="danger">{overdueCount} overdue</Badge> : null}
+          <Badge tone="neutral">
+            {filtered.length} of {tasks.length}
+          </Badge>
+        </span>
       </div>
+
+      {builderOpen ? (
+        <div id="filter-builder">
+          <FilterBuilder
+            filter={filter}
+            context={{ columns, people }}
+            onChange={(next: FilterGroup) => patchConfig({ filter: next })}
+          />
+        </div>
+      ) : null}
 
       {selected.size > 0 ? (
         <div
@@ -310,13 +398,75 @@ export function ProjectViews({
           tasks={filtered}
           selected={selected}
           onToggle={toggle}
+          config={config}
+          onConfigChange={patchConfig}
         />
       ) : null}
 
-      {view === 'calendar' ? <CalendarView orgSlug={orgSlug} tasks={filtered} /> : null}
+      {view === 'calendar' ? (
+        <CalendarView orgSlug={orgSlug} tasks={filtered} span={config.calendarSpan ?? 'month'} />
+      ) : null}
 
       {view === 'timeline' ? (
         <TimelineView orgSlug={orgSlug} tasks={filtered} dependencies={dependencies} />
+      ) : null}
+    </div>
+  );
+}
+
+const COLUMN_LABEL: Record<ListColumn, string> = {
+  task: 'Task',
+  column: 'Column',
+  priority: 'Priority',
+  due: 'Due',
+  assignees: 'Assignees',
+};
+
+/** Which list columns to show - the saved column set, in other words. */
+function ColumnPicker({
+  visible,
+  onChange,
+}: {
+  visible: ListColumn[];
+  onChange: (next: ListColumn[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <Button
+        variant="ghost"
+        size="sm"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+      >
+        Columns ({visible.length})
+      </Button>
+
+      {open ? (
+        <fieldset className="border-border bg-surface shadow-pop absolute z-20 mt-1 space-y-1 rounded-md border p-2">
+          <legend className="sr-only">Columns to show</legend>
+          {LIST_COLUMNS.map((column) => (
+            <label key={column} className="flex items-center gap-2 px-1 text-[13px]">
+              <input
+                type="checkbox"
+                className="accent-accent size-3.5"
+                checked={visible.includes(column)}
+                // The task column is the row's identity; hiding it would leave
+                // a table of attributes belonging to nothing.
+                disabled={column === 'task'}
+                onChange={(event) =>
+                  onChange(
+                    event.target.checked
+                      ? LIST_COLUMNS.filter((key) => visible.includes(key) || key === column)
+                      : visible.filter((key) => key !== column),
+                  )
+                }
+              />
+              {COLUMN_LABEL[column]}
+            </label>
+          ))}
+        </fieldset>
       ) : null}
     </div>
   );

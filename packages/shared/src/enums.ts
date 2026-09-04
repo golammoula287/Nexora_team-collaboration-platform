@@ -19,6 +19,16 @@ export type TaskPriority = (typeof TASK_PRIORITIES)[number];
 export const DEPENDENCY_TYPES = ['blocks', 'blocked-by', 'relates-to'] as const;
 export type DependencyType = (typeof DEPENDENCY_TYPES)[number];
 
+/** How a board column behaves, independent of what it is called. */
+export const STATUS_CATEGORIES = ['todo', 'in-progress', 'done', 'cancelled'] as const;
+export type StatusCategory = (typeof STATUS_CATEGORIES)[number];
+
+export const VIEW_LAYOUTS = ['board', 'list', 'calendar', 'timeline'] as const;
+export type ViewLayout = (typeof VIEW_LAYOUTS)[number];
+
+export const TEMPLATE_KINDS = ['task', 'project'] as const;
+export type TemplateKind = (typeof TEMPLATE_KINDS)[number];
+
 export const DEAL_STAGES = ['lead', 'qualified', 'proposal', 'won', 'lost'] as const;
 export type DealStage = (typeof DEAL_STAGES)[number];
 

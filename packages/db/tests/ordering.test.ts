@@ -138,4 +138,32 @@ describe('nthPosition', () => {
     expect(() => nthPosition(-1)).toThrow();
     expect(() => nthPosition(1.5)).toThrow();
   });
+
+  it('produces keys keyBetween will accept as neighbours', () => {
+    /*
+     * The two functions have to agree on what a canonical key is, and they did
+     * not: counting in base 62 puts a '0' at the end every 62nd item, starting
+     * with nthPosition(0) = "10". keyBetween rejects a trailing zero, so the
+     * first column of every seeded board could not be reordered - a failure
+     * that surfaces on the first drag, long after the seed looked fine.
+     *
+     * 200 covers several wraps of the digit alphabet.
+     */
+    const keys = Array.from({ length: 200 }, (_, i) => nthPosition(i));
+
+    for (const key of keys) {
+      expect(key.endsWith('0'), `${key} ends with a zero`).toBe(false);
+      expect(() => keyBetween(key, null)).not.toThrow();
+      expect(() => keyBetween(null, key)).not.toThrow();
+    }
+
+    for (let i = 0; i < keys.length - 1; i += 1) {
+      const before = keys[i] as string;
+      const after = keys[i + 1] as string;
+      const between = keyBetween(before, after);
+
+      expect(before < between).toBe(true);
+      expect(between < after).toBe(true);
+    }
+  });
 });

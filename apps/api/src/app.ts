@@ -6,12 +6,18 @@ import { corsOrigins, isDevelopment, isProduction } from './env.js';
 import { onError, onNotFound } from './middleware/error.js';
 import { requestId } from './middleware/request-id.js';
 import { authRoute } from './routes/auth.js';
+import { boardRoute } from './routes/board.js';
+import { checklistRoute } from './routes/checklists.js';
+import { conversionRoute } from './routes/conversions.js';
 import { devRoute } from './routes/dev.js';
 import { healthRoute } from './routes/health.js';
 import { meRoute } from './routes/me.js';
 import { memberRoute } from './routes/members.js';
 import { organizationRoute } from './routes/organizations.js';
 import { projectRoute } from './routes/projects.js';
+import { savedViewRoute } from './routes/saved-views.js';
+import { templateRoute } from './routes/templates.js';
+import { watcherRoute } from './routes/watchers.js';
 import { dependencyListRoute } from './routes/dependencies-list.js';
 import { taskOperationsRoute } from './routes/task-operations.js';
 import { taskRoute } from './routes/tasks.js';
@@ -68,6 +74,14 @@ export function createApp(services: Services) {
     .route('/', organizationRoute(services))
     .route('/', memberRoute(services))
     .route('/', projectRoute(services))
+    .route('/', boardRoute(services))
+    .route('/', templateRoute(services))
+    .route('/', savedViewRoute(services))
+    .route('/', conversionRoute(services))
+    // Deeper task paths before `/tasks/:taskId`, for the same reason the bulk
+    // routes go first: a wildcard segment would otherwise swallow them.
+    .route('/', checklistRoute(services))
+    .route('/', watcherRoute(services))
     .route('/', taskOperationsRoute(services))
     .route('/', taskRoute(services))
     .route('/', dependencyListRoute(services));

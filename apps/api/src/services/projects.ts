@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, sql } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
-import { keyBetween, newId, schema, withOrg, type AnyDatabase } from '@nexora/db';
+import { keyBetween, keySequence, newId, schema, withOrg, type AnyDatabase } from '@nexora/db';
 import type { CreateProjectInput, UpdateProjectInput } from '@nexora/shared';
 import { recordActivity, type AuditEntry } from '../lib/audit.js';
 
@@ -161,6 +161,13 @@ export async function createProject(
     );
 
     // A board with no columns is unusable, so every project starts with four.
+    //
+    // `keySequence`, not repeated `keyBetween` calls: the previous version
+    // passed the loop index as if it were an ordering key, which produced
+    // ["V", "W", "W", "X"] - two columns sharing a position. Postgres is then
+    // free to return them in either order, and reordering against a tie throws.
+    const statusPositions = keySequence(DEFAULT_STATUSES.length);
+
     await tx.insert(schema.taskStatuses).values(
       DEFAULT_STATUSES.map((status, index) =>
         scope.values({
@@ -168,7 +175,7 @@ export async function createProject(
           name: status.name,
           category: status.category,
           color: status.color,
-          position: keyBetween(index === 0 ? null : `${index}`, null),
+          position: statusPositions[index] ?? keyBetween(null, null),
         }),
       ),
     );

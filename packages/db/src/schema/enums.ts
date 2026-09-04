@@ -7,6 +7,7 @@ import {
   PLAN_TIERS,
   PROJECT_STATUSES,
   PROJECT_VISIBILITIES,
+  STATUS_CATEGORIES,
   TASK_PRIORITIES,
 } from '@nexora/shared';
 
@@ -27,15 +28,12 @@ export const planTierEnum = pgEnum('plan_tier', PLAN_TIERS);
 export const digestCadenceEnum = pgEnum('digest_cadence', DIGEST_CADENCES);
 
 /** Statuses a task column can behave as, independent of its display name. */
-export const statusCategoryEnum = pgEnum('status_category', [
-  'todo',
-  'in-progress',
-  'done',
-  'cancelled',
-]);
+export const statusCategoryEnum = pgEnum('status_category', STATUS_CATEGORIES);
 
 /** Polymorphic parent for comments, attachments, reactions and activities. */
 export const entityTypeEnum = pgEnum('entity_type', [
+  'organization',
+  'member',
   'project',
   'task',
   'document',

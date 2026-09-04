@@ -15,6 +15,27 @@
       "when": 1788448922611,
       "tag": "0001_search_and_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788448924000,
+      "tag": "0002_entity_types",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788448926000,
+      "tag": "0003_repair_column_positions",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788448928000,
+      "tag": "0004_canonical_column_positions",
+      "breakpoints": true
     }
   ]
 }
