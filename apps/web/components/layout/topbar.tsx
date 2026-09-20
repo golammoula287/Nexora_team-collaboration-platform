@@ -18,6 +18,7 @@ import {
 import { Bell, LogOut, Menu, Monitor, Moon, Search, Settings, Sun, User } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import Link from 'next/link';
+import type { Route } from 'next';
 import { useState } from 'react';
 import { modKeyLabel } from '../../hooks/use-keyboard-shortcut';
 import { SidebarContent, type OrgSummary } from './sidebar';
@@ -114,7 +115,7 @@ export function Topbar({
   organizations: OrgSummary[];
   current: OrgSummary;
   user: CurrentUser;
-  breadcrumbs: { label: string; href?: string }[];
+  breadcrumbs: { label: string; href?: Route }[];
   onOpenSearch: () => void;
   onSignOut: () => void;
   unreadCount?: number;

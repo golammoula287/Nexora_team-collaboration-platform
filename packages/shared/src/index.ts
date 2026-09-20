@@ -5,6 +5,7 @@ export * from './permissions';
 export * from './schemas/board';
 export * from './schemas/checklist';
 export * from './schemas/conversion';
+export * from './schemas/document';
 export * from './schemas/organization';
 export * from './schemas/project';
 export * from './schemas/task';

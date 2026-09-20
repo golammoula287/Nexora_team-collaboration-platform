@@ -46,6 +46,11 @@ export const comments = pgTable(
     body: jsonb('body').notNull(),
     /** Plain-text mirror, for search and embeddings. */
     bodyText: text('body_text').notNull().default(''),
+    selectionFrom: integer('selection_from'),
+    selectionTo: integer('selection_to'),
+    selectionQuote: text('selection_quote'),
+    suggestion: jsonb('suggestion'),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true, mode: 'date' }),
     editedAt: timestamp('edited_at', { withTimezone: true, mode: 'date' }),
     /** A deleted comment leaves a tombstone so the thread still reads correctly. */
     isTombstone: boolean('is_tombstone').notNull().default(false),
@@ -216,6 +221,7 @@ export const documents = pgTable(
     title: text('title').notNull().default('Untitled'),
     icon: text('icon'),
     yState: bytea('y_state'),
+    content: jsonb('content'),
     contentText: text('content_text').notNull().default(''),
     createdById: uuid('created_by_id').references(() => user.id, { onDelete: 'set null' }),
     /** Public read-only share token (P1); null while unpublished. */
@@ -242,7 +248,9 @@ export const documentVersions = pgTable(
       .notNull()
       .references(() => documents.id, { onDelete: 'cascade' }),
     yState: bytea('y_state'),
+    content: jsonb('content'),
     contentText: text('content_text').notNull().default(''),
+    title: text('title').notNull().default('Untitled'),
     label: text('label'),
     createdById: uuid('created_by_id').references(() => user.id, { onDelete: 'set null' }),
     ...createdOnly,
@@ -251,6 +259,45 @@ export const documentVersions = pgTable(
     index('document_versions_doc_idx').on(t.documentId, t.createdAt),
     index('document_versions_org_idx').on(t.organizationId),
     index('document_versions_creator_idx').on(t.createdById),
+  ],
+);
+
+export const documentFavorites = pgTable(
+  'document_favorites',
+  {
+    id: primaryId(),
+    organizationId: organizationId(),
+    documentId: uuid('document_id')
+      .notNull()
+      .references(() => documents.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    ...createdOnly,
+  },
+  (t) => [
+    uniqueIndex('document_favorites_user_doc_uq').on(t.organizationId, t.userId, t.documentId),
+    index('document_favorites_doc_idx').on(t.documentId),
+    index('document_favorites_user_idx').on(t.userId),
+  ],
+);
+
+export const spaceWikiHomes = pgTable(
+  'space_wiki_homes',
+  {
+    id: primaryId(),
+    organizationId: organizationId(),
+    spaceId: uuid('space_id')
+      .notNull()
+      .references(() => spaces.id, { onDelete: 'cascade' }),
+    documentId: uuid('document_id')
+      .notNull()
+      .references(() => documents.id, { onDelete: 'cascade' }),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex('space_wiki_homes_space_uq').on(t.organizationId, t.spaceId),
+    index('space_wiki_homes_document_idx').on(t.documentId),
   ],
 );
 

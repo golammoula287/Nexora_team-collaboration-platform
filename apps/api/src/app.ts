@@ -10,6 +10,7 @@ import { boardRoute } from './routes/board.js';
 import { checklistRoute } from './routes/checklists.js';
 import { conversionRoute } from './routes/conversions.js';
 import { devRoute } from './routes/dev.js';
+import { documentRoute } from './routes/documents.js';
 import { healthRoute } from './routes/health.js';
 import { meRoute } from './routes/me.js';
 import { memberRoute } from './routes/members.js';
@@ -67,24 +68,27 @@ export function createApp(services: Services) {
   // Test-only helpers, and only outside production - see routes/dev.ts.
   if (!isProduction) base.route('/', devRoute());
 
-  return base
-    .route('/', healthRoute)
-    .route('/', authRoute(services))
-    .route('/', meRoute(services))
-    .route('/', organizationRoute(services))
-    .route('/', memberRoute(services))
-    .route('/', projectRoute(services))
-    .route('/', boardRoute(services))
-    .route('/', templateRoute(services))
-    .route('/', savedViewRoute(services))
-    .route('/', conversionRoute(services))
-    // Deeper task paths before `/tasks/:taskId`, for the same reason the bulk
-    // routes go first: a wildcard segment would otherwise swallow them.
-    .route('/', checklistRoute(services))
-    .route('/', watcherRoute(services))
-    .route('/', taskOperationsRoute(services))
-    .route('/', taskRoute(services))
-    .route('/', dependencyListRoute(services));
+  return (
+    base
+      .route('/', healthRoute)
+      .route('/', authRoute(services))
+      .route('/', meRoute(services))
+      .route('/', organizationRoute(services))
+      .route('/', memberRoute(services))
+      .route('/', projectRoute(services))
+      .route('/', documentRoute(services))
+      .route('/', boardRoute(services))
+      .route('/', templateRoute(services))
+      .route('/', savedViewRoute(services))
+      .route('/', conversionRoute(services))
+      // Deeper task paths before `/tasks/:taskId`, for the same reason the bulk
+      // routes go first: a wildcard segment would otherwise swallow them.
+      .route('/', checklistRoute(services))
+      .route('/', watcherRoute(services))
+      .route('/', taskOperationsRoute(services))
+      .route('/', taskRoute(services))
+      .route('/', dependencyListRoute(services))
+  );
 }
 
 export type App = ReturnType<typeof createApp>;

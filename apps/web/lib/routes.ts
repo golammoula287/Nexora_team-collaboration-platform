@@ -1,5 +1,13 @@
 import type { Route } from 'next';
 
+type OrgSection =
+  'inbox' | 'projects' | 'docs' | 'chat' | 'goals' | 'reports' | 'trash' | 'settings' | 'admin';
+
+/** The shell only links to these existing organization sections. */
+export function orgRoute(orgSlug: string, section: OrgSection): Route {
+  return `/${encodeURIComponent(orgSlug)}/${section}` as Route;
+}
+
 /**
  * `typedRoutes` checks every href against the routes that actually exist,
  * which is exactly the class of bug the legacy app shipped - 7 of its 12

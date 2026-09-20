@@ -25,8 +25,10 @@ import {
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
+import type { Route } from 'next';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
+import { orgRoute } from '../../lib/routes';
 
 export interface OrgSummary {
   id: string;
@@ -110,7 +112,7 @@ function NavLink({
   icon: Icon,
   active,
 }: {
-  href: string;
+  href: Route;
   label: string;
   icon: typeof Inbox;
   active: boolean;
@@ -160,7 +162,7 @@ export function SidebarContent({
         {NAV.map((item) => (
           <NavLink
             key={item.key}
-            href={`/${orgSlug}/${item.key}`}
+            href={orgRoute(orgSlug, item.key)}
             label={item.label}
             icon={item.icon}
             active={isActive(item.key)}
@@ -175,7 +177,7 @@ export function SidebarContent({
             {ADMIN_NAV.map((item) => (
               <NavLink
                 key={item.key}
-                href={`/${orgSlug}/${item.key}`}
+                href={orgRoute(orgSlug, item.key)}
                 label={item.label}
                 icon={item.icon}
                 active={isActive(item.key)}

@@ -12,6 +12,8 @@ import {
 } from '@nexora/ui';
 import { FileText, FolderKanban, Inbox, Moon, Plus, Settings, Sun, Users } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import type { Route } from 'next';
+import { orgRoute } from '../../lib/routes';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState, type ReactNode } from 'react';
 import { authClient } from '../../lib/auth-client';
@@ -36,7 +38,7 @@ export function AppShell({
   orgSlug: string;
   organizations: OrgSummary[];
   user: CurrentUser;
-  breadcrumbs: { label: string; href?: string }[];
+  breadcrumbs: { label: string; href?: Route }[];
   children: ReactNode;
 }) {
   const router = useRouter();
@@ -46,7 +48,7 @@ export function AppShell({
   const current =
     organizations.find((org) => org.slug === orgSlug) ?? (organizations[0] as OrgSummary);
 
-  const go = (path: string) => {
+  const go = (path: Route) => {
     setPaletteOpen(false);
     router.push(path);
   };
@@ -96,19 +98,19 @@ export function AppShell({
           </CommandEmpty>
 
           <CommandGroup heading="Go to">
-            <CommandItem icon={<Inbox />} onSelect={() => go(`/${orgSlug}/inbox`)}>
+            <CommandItem icon={<Inbox />} onSelect={() => go(orgRoute(orgSlug, 'inbox'))}>
               Inbox
             </CommandItem>
-            <CommandItem icon={<FolderKanban />} onSelect={() => go(`/${orgSlug}/projects`)}>
+            <CommandItem icon={<FolderKanban />} onSelect={() => go(orgRoute(orgSlug, 'projects'))}>
               Projects
             </CommandItem>
-            <CommandItem icon={<FileText />} onSelect={() => go(`/${orgSlug}/docs`)}>
+            <CommandItem icon={<FileText />} onSelect={() => go(orgRoute(orgSlug, 'docs'))}>
               Docs
             </CommandItem>
-            <CommandItem icon={<Users />} onSelect={() => go(`/${orgSlug}/admin`)}>
+            <CommandItem icon={<Users />} onSelect={() => go(orgRoute(orgSlug, 'admin'))}>
               Members
             </CommandItem>
-            <CommandItem icon={<Settings />} onSelect={() => go(`/${orgSlug}/settings`)}>
+            <CommandItem icon={<Settings />} onSelect={() => go(orgRoute(orgSlug, 'settings'))}>
               Settings
             </CommandItem>
           </CommandGroup>
@@ -116,7 +118,7 @@ export function AppShell({
           <CommandGroup heading="Actions">
             <CommandItem
               icon={<Plus />}
-              onSelect={() => go(`/${orgSlug}/projects`)}
+              onSelect={() => go(orgRoute(orgSlug, 'projects'))}
               value="new project create"
             >
               New project
