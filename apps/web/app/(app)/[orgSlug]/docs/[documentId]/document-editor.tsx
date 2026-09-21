@@ -11,10 +11,13 @@ import { Mention } from '@tiptap/extension-mention';
 import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight';
 import { Youtube } from '@tiptap/extension-youtube';
 import { Mathematics } from '@tiptap/extension-mathematics';
+import Collaboration from '@tiptap/extension-collaboration';
+import CollaborationCaret from '@tiptap/extension-collaboration-caret';
+import type { LiveblocksYjsProvider } from '@liveblocks/yjs';
 import { common, createLowlight } from 'lowlight';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../../../../../lib/api';
 import { Callout, SlashCommands, Toggle, suggestionMenu } from './doc-extensions';
 import { textDiff } from './text-diff';
@@ -42,17 +45,23 @@ type Annotation = {
   resolvedAt: string | null;
 };
 
+export type DocumentEditorProps = {
+  orgSlug: string;
+  document: Document;
+  canEdit: boolean;
+  members: { id: string; label: string }[];
+  collaboration?: { provider: LiveblocksYjsProvider; name: string; color: string };
+  collaborators?: { id: number; name: string }[];
+};
+
 export function DocumentEditor({
   orgSlug,
   document,
   canEdit,
   members,
-}: {
-  orgSlug: string;
-  document: Document;
-  canEdit: boolean;
-  members: { id: string; label: string }[];
-}) {
+  collaboration,
+  collaborators = [],
+}: DocumentEditorProps) {
   const router = useRouter();
   const [title, setTitle] = useState(document.title);
   const [status, setStatus] = useState('');
@@ -70,7 +79,16 @@ export function DocumentEditor({
   const [suggestion, setSuggestion] = useState('');
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({ codeBlock: false }),
+      StarterKit.configure({ codeBlock: false, ...(collaboration ? { undoRedo: false } : {}) }),
+      ...(collaboration
+        ? [
+            Collaboration.configure({ document: collaboration.provider.getYDoc() }),
+            CollaborationCaret.configure({
+              provider: collaboration.provider,
+              user: { name: collaboration.name, color: collaboration.color },
+            }),
+          ]
+        : []),
       CodeBlockLowlight.configure({ lowlight: createLowlight(common) }),
       Table.configure({ resizable: true }),
       TableRow,
@@ -94,12 +112,30 @@ export function DocumentEditor({
         },
       }),
     ],
-    content: (document.content ?? { type: 'doc', content: [] }) as JSONContent,
+    ...(!collaboration
+      ? { content: (document.content ?? { type: 'doc', content: [] }) as JSONContent }
+      : {}),
     editable: canEdit,
     immediatelyRender: false,
     onUpdate: () => setDirty(true),
     editorProps: { attributes: { class: 'doc-editor min-h-80 px-5 py-4 text-fg outline-none' } },
   });
+
+  useEffect(() => {
+    if (!collaboration || !editor) return;
+    const provider = collaboration.provider;
+    const seed = (synced: boolean) => {
+      if (!synced || !canEdit) return;
+      const fragment = provider.getYDoc().getXmlFragment('default');
+      if (fragment.length === 0 && document.content) {
+        editor.commands.setContent(document.content as JSONContent);
+        setDirty(false);
+      }
+    };
+    provider.on('sync', seed);
+    if (provider.synced) seed(true);
+    return () => provider.off('sync', seed);
+  }, [collaboration, editor, canEdit, document.content]);
 
   function insertImage() {
     if (!editor) return;
@@ -332,6 +368,12 @@ export function DocumentEditor({
         <span role="status" className="text-fg-muted text-sm">
           {status}
         </span>
+        {collaboration && <span className="text-fg-muted text-xs">Live collaboration</span>}
+        {collaborators.length > 0 && (
+          <span className="text-fg-muted text-xs" aria-label="People editing this document">
+            {collaborators.map((person) => person.name).join(', ')}
+          </span>
+        )}
       </div>
       {canEdit && editor && (
         <div

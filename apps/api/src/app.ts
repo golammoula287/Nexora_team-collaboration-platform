@@ -12,6 +12,7 @@ import { conversionRoute } from './routes/conversions.js';
 import { devRoute } from './routes/dev.js';
 import { documentRoute } from './routes/documents.js';
 import { healthRoute } from './routes/health.js';
+import { liveblocksRoute } from './routes/liveblocks.js';
 import { meRoute } from './routes/me.js';
 import { memberRoute } from './routes/members.js';
 import { organizationRoute } from './routes/organizations.js';
@@ -77,6 +78,7 @@ export function createApp(services: Services) {
       .route('/', memberRoute(services))
       .route('/', projectRoute(services))
       .route('/', documentRoute(services))
+      .route('/', liveblocksRoute(services))
       .route('/', boardRoute(services))
       .route('/', templateRoute(services))
       .route('/', savedViewRoute(services))

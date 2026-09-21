@@ -128,3 +128,21 @@
 .doc-suggestion-item[aria-selected='true'] {
   background: var(--accent-soft);
 }
+.doc-editor .collaboration-carets__caret {
+  border-left: 2px solid currentColor;
+  margin-left: -1px;
+  pointer-events: none;
+  position: relative;
+}
+
+.doc-editor .collaboration-carets__label {
+  border-radius: 3px 3px 3px 0;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  left: -2px;
+  padding: 1px 5px;
+  position: absolute;
+  top: -1.5em;
+  white-space: nowrap;
+}

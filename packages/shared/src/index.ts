@@ -2,6 +2,7 @@ export * from './constants';
 export * from './enums';
 export * from './filter';
 export * from './permissions';
+export * from './realtime';
 export * from './schemas/board';
 export * from './schemas/checklist';
 export * from './schemas/conversion';

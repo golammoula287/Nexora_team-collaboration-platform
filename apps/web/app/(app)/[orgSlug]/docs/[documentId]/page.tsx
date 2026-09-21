@@ -2,7 +2,7 @@ import { EmptyState, PageHeader } from '@nexora/ui';
 import { can, type OrgRole } from '@nexora/shared';
 import type { Metadata } from 'next';
 import { serverApi } from '../../../../../lib/api.server';
-import { DocumentEditor } from './document-editor';
+import { RealtimeDocument } from './realtime-document';
 
 export const metadata: Metadata = { title: 'Document' };
 
@@ -29,15 +29,18 @@ export default async function DocumentPage({
       </div>
     );
   const { document } = await response.json();
-  const { organizations } = await meResponse.json();
+  const { organizations, user } = await meResponse.json();
   const { members } = membersResponse.ok ? await membersResponse.json() : { members: [] };
   const role = (organizations.find((org) => org.slug === orgSlug)?.role ?? 'guest') as OrgRole;
   return (
-    <DocumentEditor
+    <RealtimeDocument
       orgSlug={orgSlug}
       document={document}
       canEdit={can(role, 'update', 'document')}
       members={members.map((member) => ({ id: member.user.id, label: member.user.name }))}
+      organizationId={organizations.find((org) => org.slug === orgSlug)?.id ?? ''}
+      userId={user.id}
+      userName={user.name}
     />
   );
 }

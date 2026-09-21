@@ -194,12 +194,14 @@ export function BoardView({
   tasks,
   selected,
   onToggle,
+  onMoved,
 }: {
   orgSlug: string;
   columns: ViewColumn[];
   tasks: ViewTask[];
   selected: Set<string>;
   onToggle: (taskId: string) => void;
+  onMoved?: () => void;
 }) {
   const router = useRouter();
   const [dragging, setDragging] = useState<ViewTask | null>(null);
@@ -268,13 +270,17 @@ export function BoardView({
     });
 
     setLocal(null);
-    if (ok) router.refresh();
+    if (ok) {
+      onMoved?.();
+      router.refresh();
+    }
   }
 
   async function moveToColumn(task: ViewTask, statusId: string) {
     const column = columns.find((candidate) => candidate.id === statusId);
     const ok = await moveTask(orgSlug, task.id, { statusId });
     if (ok) {
+      onMoved?.();
       toast.success(`Moved to ${column?.name ?? 'another column'}`);
       router.refresh();
     }

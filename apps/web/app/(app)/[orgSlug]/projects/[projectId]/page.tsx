@@ -94,11 +94,7 @@ export default async function ProjectPage({
               <NewTaskButton orgSlug={orgSlug} projectId={projectId} statuses={statuses} />
             ) : null}
             {can(role, 'create', 'project') ? (
-              <ProjectActions
-                orgSlug={orgSlug}
-                projectId={projectId}
-                projectName={project.name}
-              />
+              <ProjectActions orgSlug={orgSlug} projectId={projectId} projectName={project.name} />
             ) : null}
           </div>
         }
@@ -106,6 +102,7 @@ export default async function ProjectPage({
 
       <ProjectViews
         orgSlug={orgSlug}
+        organizationId={me?.organizations.find((org) => org.slug === orgSlug)?.id ?? ''}
         projectId={projectId}
         columns={statuses}
         tasks={tasks}

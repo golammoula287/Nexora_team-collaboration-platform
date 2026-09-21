@@ -24,7 +24,7 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { api } from '../../../../../../lib/api';
-import { BoardView } from './board-view';
+import { RealtimeBoard } from './realtime-board';
 import { CalendarView } from './calendar-view';
 import { FilterBuilder } from './filter-builder';
 import { ListView } from './list-view';
@@ -64,6 +64,7 @@ const DEFAULT_CONFIG: ViewConfig = {
 export function ProjectViews({
   orgSlug,
   projectId,
+  organizationId,
   columns,
   tasks,
   dependencies,
@@ -74,6 +75,7 @@ export function ProjectViews({
 }: {
   orgSlug: string;
   projectId: string;
+  organizationId: string;
   columns: ViewColumn[];
   tasks: ViewTask[];
   dependencies: DependencyEdge[];
@@ -382,8 +384,10 @@ export function ProjectViews({
       ) : null}
 
       {view === 'board' ? (
-        <BoardView
+        <RealtimeBoard
           orgSlug={orgSlug}
+          organizationId={organizationId}
+          projectId={projectId}
           columns={columns}
           tasks={filtered}
           selected={selected}
